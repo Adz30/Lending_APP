@@ -341,7 +341,9 @@ contract VAULT_B is ERC20, IERC4626 {
         SafeERC20.safeTransferFrom(_asset, caller, address(this), assets);
         _mint(receiver, shares);
 
+
         emit Deposit(caller, receiver, assets, shares);
+        VAULT_CONTROLLER(controller).calculateCollateralAmount(caller, assets);
     }
 
     /**
