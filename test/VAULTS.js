@@ -91,8 +91,32 @@ describe("VAULTS", () => {
 
         const totalAssets = await vaultA.totalAssets();
         const maxRedeem = await vaultA.maxRedeem(user1.address);
+        console.log((await vaultA.balanceOf(user1.address)).toString());
+        console.log((await vaultA.maxRedeem(user1.address)).toString());
 
-        expect(await vaultA.balanceOf(user1.address)).to.be.gt(0);
+        expect(await vaultA.balanceOf(user1.address)).to.be.gt(tokens(199));
+        expect(totalAssets).to.be.gt(0);
+        expect(maxRedeem).to.be.gt(0);
+      });
+      it("User1 deposits 200 TKNA and receives sharesplus inital amout", async () => {
+        const amount = tokens(200);
+        const initialAmount = tokens(1000);
+
+        await TOKEN_A.connect(deployer).approve(vaultA.address, initialAmount);
+        await vaultA.connect(deployer).setFunds(initialAmount);
+
+        await TOKEN_A.connect(user1).approve(vaultA.address, amount);
+        await expect(vaultA.connect(user1).deposit(amount, user1.address))
+          .to.emit(vaultA, "Deposit")
+          .withArgs(user1.address, user1.address, amount, amount);
+
+        const totalAssets = await vaultA.totalAssets();
+        const maxRedeem = await vaultA.maxRedeem(user1.address);
+        console.log((await vaultA.balanceOf(user1.address)).toString());
+        console.log((await vaultA.maxRedeem(user1.address)).toString());
+        console.log("Total Assets in Vault:", totalAssets.toString());
+
+        expect(await vaultA.balanceOf(user1.address)).to.be.gt(tokens(199));
         expect(totalAssets).to.be.gt(0);
         expect(maxRedeem).to.be.gt(0);
       });
@@ -113,6 +137,11 @@ describe("VAULTS", () => {
 
       it("User1 deposits 200 TKNA then redeems all shares", async () => {
         const amount = tokens(200);
+        const initialAmount = tokens(1000);
+
+        await TOKEN_A.connect(deployer).approve(vaultA.address, initialAmount);
+        await vaultA.connect(deployer).setFunds(initialAmount);
+
         await TOKEN_A.connect(user1).approve(vaultA.address, amount);
         await vaultA.connect(user1).deposit(amount, user1.address);
 
@@ -120,6 +149,9 @@ describe("VAULTS", () => {
         await vaultA
           .connect(user1)
           .redeem(shares, user1.address, user1.address);
+
+        const totalAssets = await vaultA.totalAssets();
+        console.log("Total Assets in Vault:", totalAssets.toString());
 
         expect(await vaultA.balanceOf(user1.address)).to.equal(0);
       });
@@ -129,7 +161,10 @@ describe("VAULTS", () => {
         const collateralAmount = tokens(100);
         const loanAmount = tokens(90);
 
-        await TOKEN_A.connect(user1).transfer(vaultA.address, amount);
+        const initialAmount = tokens(1000);
+
+        await TOKEN_A.connect(deployer).approve(vaultA.address, initialAmount);
+        await vaultA.connect(deployer).setFunds(initialAmount);
 
         const controllerAddress = await vaultA.vaultController();
         expect(controllerAddress).to.equal(vaultController.address);
@@ -145,6 +180,9 @@ describe("VAULTS", () => {
           "Loan amount mismatch"
         );
 
+        const totalAssets = await vaultA.totalAssets();
+        console.log("Total Assets in Vault:", totalAssets.toString());
+
         const borrower0 = await vaultA.borrowers(0);
         expect(borrower0).to.equal(
           user2.address,
@@ -158,6 +196,10 @@ describe("VAULTS", () => {
         const loanAmount = tokens(270);
         const plusFee = tokens(30);
         const redepositAmount = tokens(10);
+        const initialAmount = tokens(1000);
+
+        await TOKEN_A.connect(deployer).approve(vaultA.address, initialAmount);
+        await vaultA.connect(deployer).setFunds(initialAmount);
 
         const depositForShares = tokens(150);
         await TOKEN_A.connect(user1).approve(vaultA.address, depositForShares);
@@ -250,6 +292,9 @@ describe("VAULTS", () => {
         await vaultA
           .connect(user1)
           .redeem(shares, user1.address, user1.address);
+
+        const vaultAAssets = await vaultA.totalAssets();
+        console.log("Total Assets in Vault:", vaultAAssets.toString());
 
         expect(await vaultA.balanceOf(user1.address)).to.equal(0);
       });
@@ -458,7 +503,10 @@ describe("VAULTS", () => {
     describe("Success", () => {
       it("User2 deposits 200 TKNB and receives shares", async () => {
         const amount = tokens(200);
-        await TOKEN_A.transfer(vaultA.address, ethers.utils.parseUnits("1000", 18));
+        await TOKEN_A.transfer(
+          vaultA.address,
+          ethers.utils.parseUnits("1000", 18)
+        );
 
         await TOKEN_B.connect(user2).approve(vaultB.address, amount);
         await expect(vaultB.connect(user2).deposit(amount, user2.address))
@@ -473,86 +521,82 @@ describe("VAULTS", () => {
         expect(maxRedeem).to.be.gt(0);
       });
 
-      
-    
-      
       it("check the liquidation system works ", async () => {
         // get loan using previous tests
-        
+
         const amount = tokens(300);
         const collateralAmount = tokens(100);
         const loanAmount = tokens(90);
         await TOKEN_A.connect(user1).transfer(vaultA.address, amount);
-       
-        
+
         await TOKEN_B.connect(user2).approve(vaultB.address, collateralAmount);
-        await expect(vaultB.connect(user2).deposit(collateralAmount, user2.address))
-        .to.emit(vaultB, "Deposit")
-        .withArgs(user2.address, user2.address, collateralAmount, collateralAmount);
-        
+        await expect(
+          vaultB.connect(user2).deposit(collateralAmount, user2.address)
+        )
+          .to.emit(vaultB, "Deposit")
+          .withArgs(
+            user2.address,
+            user2.address,
+            collateralAmount,
+            collateralAmount
+          );
+
         const totalAssets = await vaultB.totalAssets();
         const maxRedeem = await vaultB.maxRedeem(user2.address);
-        
+
         expect(await vaultB.balanceOf(user2.address)).to.be.gt(0);
         expect(totalAssets).to.be.gt(0);
         expect(maxRedeem).to.be.gt(0);
-        
-        
-        
+
         const controllerAddress = await vaultA.vaultController();
         expect(controllerAddress).to.equal(vaultController.address);
-       
-        
+
         const after = await TOKEN_A.balanceOf(user2.address);
         expect(after.toString()).to.equal(
           loanAmount.toString(),
           "Loan amount mismatch"
         );
-        
+
         const borrower0 = await vaultA.borrowers(0);
         expect(borrower0).to.equal(
           user2.address,
           "Borrower not correctly added"
         );
-        
+
         //get block.timestamp
         // Get loan start time
         const loanStartTime = await vaultController.loanStartTime(
           user2.address
         );
-        
-        
+
         // Increase time by 8 days
         await network.provider.send("evm_increaseTime", [8 * 24 * 60 * 60]);
         await network.provider.send("evm_mine");
-        
+
         // Get current block timestamp
         const latestBlock = await ethers.provider.getBlock("latest");
-        
-        
+
         // Calculate elapsed time
         const elapsedTime = latestBlock.timestamp - loanStartTime.toNumber();
-        
-        
+
         //call the liquidaiton function
         await expect(vaultController.connect(deployer).liquidate(user2.address))
-        .to.emit(vaultController,"liquidated")
-        .withArgs(user2.address, collateralAmount);
-        
+          .to.emit(vaultController, "liquidated")
+          .withArgs(user2.address, collateralAmount);
+
         const locked = await vaultController.locked(user2.address);
         const loanBalance = await vaultController.loanBalances(user2.address);
         const collateral = await vaultController.collateralDeposited(
           user2.address
         );
-        const vaultAAssets = await vaultA.totalAssets()
+        const vaultAAssets = await vaultA.totalAssets();
         const expected = collateralAmount.add(amount).sub(loanAmount);
-        
+
         expect(locked).to.be.false;
         expect(loanBalance).to.equal(0);
         expect(collateral).to.equal(0);
         expect(vaultAAssets).to.equal(expected);
-        
-        
+
         // await
       });
     });
@@ -561,44 +605,42 @@ describe("VAULTS", () => {
         const amount = tokens(200);
         await TOKEN_A.connect(user1).approve(vaultB.address, amount);
         await expect(vaultB.connect(user1).deposit(amount, user1.address)).to.be
-        .reverted;
+          .reverted;
       });
-      
-    
+
       it("rejects deposit into vaultB after loan has been paid", async () => {
         const amount = tokens(300);
         const collateralAmount = tokens(100);
         const loanAmount = tokens(90);
-        
+
         await TOKEN_A.connect(user1).transfer(vaultA.address, amount);
-        
+
         const controllerAddress = await vaultA.vaultController();
         expect(controllerAddress).to.equal(vaultController.address);
-        
+
         const transaction = await vaultController
-        .connect(deployer)
-        .calculateCollateralAmount(user2.address, collateralAmount);
+          .connect(deployer)
+          .calculateCollateralAmount(user2.address, collateralAmount);
         await transaction.wait();
-        
+
         const after = await TOKEN_A.balanceOf(user2.address);
         expect(after.toString()).to.equal(
           loanAmount.toString(),
           "Loan amount mismatch"
         );
-        
+
         const borrower0 = await vaultA.borrowers(0);
         expect(borrower0).to.equal(
           user2.address,
           "Borrower not correctly added"
         );
-        
+
         await TOKEN_B.connect(user2).approve(vaultB.address, amount);
-        
+
         await expect(
           vaultB.connect(user2).deposit(amount, user2.address)
         ).to.be.revertedWith("User is locked due to an active loan");
       });
- 
     });
   });
 });

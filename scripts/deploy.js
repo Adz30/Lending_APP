@@ -28,7 +28,8 @@ async function main() {
     "Vault A", 
     "VA", 
     tokenA.address, 
-    vaultController.address
+    vaultController.address,
+    
   );
   console.log("Vault A deployed to:", vaultA.address);
 
@@ -38,7 +39,8 @@ async function main() {
     "Vault B", 
     "VB", 
     tokenB.address, 
-    vaultController.address
+    vaultController.address,
+   
   );
   console.log("Vault B deployed to:", vaultB.address);
 
@@ -48,9 +50,14 @@ async function main() {
   console.log("VaultController linked with VaultA and VaultB");
 
   // Transfer 2000 tokens to VaultA
-  const transferAmount = tokens(2000); // 2000 tokens
-  await tokenA.transfer(vaultA.address, transferAmount);
-  console.log(`Transferred ${ethers.utils.formatUnits(transferAmount, "ether")} tokens to Vault A`);
+  const transferAmount = tokens(1000); // Adjust token amount as needed
+
+
+// Call setFunds function on Vault A contract
+console.log("Deployer Address:", deployer.address);
+await tokenA.connect(deployer).approve(vaultA.address, transferAmount);
+await vaultA.connect(deployer).setFunds(transferAmount);
+console.log(`Set ${ethers.utils.formatUnits(transferAmount, "ether")} tokens in Vault A using setFunds`);
 
   // Optional: Transfer tokens to users
   const [user1, user2] = await ethers.getSigners();

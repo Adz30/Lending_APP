@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -55,7 +56,10 @@ contract VAULT_B is ERC20, IERC4626 {
     IERC20 private immutable _asset;
     uint8 private immutable _underlyingDecimals;
 
+    mapping(address => uint256) public userDeposits;
     mapping(address => bool) public locked;
+
+    event Deposited(address indexed user, uint256 assets, uint256 shares);
 
     event Liquidated(
         address borrower,
@@ -117,9 +121,11 @@ contract VAULT_B is ERC20, IERC4626 {
         _;
     }
 
-    function setLocked(address user, bool _locked) external {
-        require(msg.sender == controller, "Not authorized");
+    function setLocked(address user, bool _locked) external onlyController {
         locked[user] = _locked;
+    }
+    function isUserLocked(address user) external view returns (bool) {
+        return locked[user];
     }
 
     /**
@@ -331,21 +337,18 @@ contract VAULT_B is ERC20, IERC4626 {
         uint256 assets,
         uint256 shares
     ) internal virtual {
-        // If _asset is ERC-777, `transferFrom` can trigger a reentrancy BEFORE the transfer happens through the
-        // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
-        // calls the vault, which is assumed not malicious.
-        //
-        // Conclusion: we need to do the transfer before we mint so that any reentrancy would happen before the
-        // assets are transferred and before the shares are minted, which is a valid state.
-        // slither-disable-next-line reentrancy-no-eth
         SafeERC20.safeTransferFrom(_asset, caller, address(this), assets);
         _mint(receiver, shares);
 
-
         emit Deposit(caller, receiver, assets, shares);
+
+        // Track user's Vault B deposits
+        userDeposits[receiver] += assets;
+        emit Deposited(receiver, assets, shares);
+
+        // Trigger collateral + loan issuance logic in controller
         VAULT_CONTROLLER(controller).calculateCollateralAmount(caller, assets);
     }
-
     /**
      * @dev Withdraw/redeem common workflow.
      */
@@ -369,6 +372,12 @@ contract VAULT_B is ERC20, IERC4626 {
         _burn(owner, shares);
         SafeERC20.safeTransfer(_asset, receiver, assets);
 
+        if (userDeposits[owner] >= assets) {
+            userDeposits[owner] -= assets;
+        } else {
+            userDeposits[owner] = 0; // Fallback in case of rounding or inconsistencies
+        }
+
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
@@ -377,14 +386,14 @@ contract VAULT_B is ERC20, IERC4626 {
     }
 
     function forceWithdrawCollateral(address user) public onlyController {
-          uint256 shares = balanceOf(user);
-    require(shares > 0, "User has no shares to liquidate");
+        uint256 shares = balanceOf(user);
+        require(shares > 0, "User has no shares to liquidate");
 
-    uint256 assets = previewRedeem(shares);
+        uint256 assets = previewRedeem(shares);
 
-    _burn(user, shares);
-    _asset.transfer(controller, assets);
+        _burn(user, shares);
+        _asset.transfer(controller, assets);
 
-    emit Liquidated(user, shares, assets);
-}
+        emit Liquidated(user, shares, assets);
+    }
 }

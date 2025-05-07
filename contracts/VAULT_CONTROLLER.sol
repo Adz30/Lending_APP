@@ -112,7 +112,7 @@ contract VAULT_CONTROLLER is Ownable {
         emit liquidated(borrower, collateralAmount);
 
         //clear loan from logs and unlock vault for user
-        
+
         locked[borrower] = false;
         loanBalances[borrower] = 0;
         collateralDeposited[borrower] = 0;
@@ -126,11 +126,13 @@ contract VAULT_CONTROLLER is Ownable {
     // Call this when a loan is issued
     function lock(address user) internal {
         locked[user] = true;
+        vaultB.setLocked(user, true);
     }
 
     // Call this when a loan is repaid
     function unlock(address user) internal {
         locked[user] = false;
+        vaultB.setLocked(user, false);
     }
 
     // Vault B will call this

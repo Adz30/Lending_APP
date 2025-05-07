@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {VAULT_CONTROLLER} from "contracts/VAULT_CONTROLLER.sol";
 import {TOKEN_A} from "contracts/TOKEN_A.sol";
+import "hardhat/console.sol";
+
 
 /**
  * @dev Implementation of the ERC-4626 "Tokenized Vault Standard" as defined in
@@ -53,10 +55,14 @@ contract VAULT_A is ERC20, IERC4626 {
 
     VAULT_CONTROLLER public vaultController;
     address[] public borrowers;
+    uint256 public totalInterest;
+    address public admin;
 
+    using SafeERC20 for IERC20;
     IERC20 public _asset;
     uint8 private _underlyingDecimals;
 
+    mapping(address => uint256) public userDeposits;
     mapping(address => uint256) public loanIssued;
     mapping(address => uint256) public repaymentAmounts;
 
@@ -108,9 +114,14 @@ contract VAULT_A is ERC20, IERC4626 {
         _underlyingDecimals = 18; // You can adjust this based on your asset's decimals
         _asset = asset_;
         vaultController = VAULT_CONTROLLER(_vaultController);
+        admin = msg.sender;
     }
     modifier onlyController() {
         require(msg.sender == address(vaultController), "Not authorized");
+        _;
+    }
+          modifier onlyAdmin() {
+        require(msg.sender == admin, "Only the admin can call this function");
         _;
     }
 
@@ -170,6 +181,7 @@ contract VAULT_A is ERC20, IERC4626 {
 
         return totalVaultHoldings + totalLoanedAssets + totalLiquidatedAssets;
     }
+
     /** @dev See {IERC4626-totalAssets}. */
 
     /** @dev See {IERC4626-convertToShares}. */
@@ -226,11 +238,20 @@ contract VAULT_A is ERC20, IERC4626 {
     }
 
     /** @dev See {IERC4626-previewRedeem}. */
-    function previewRedeem(
-        uint256 shares
-    ) public view virtual returns (uint256) {
-        return _convertToAssets(shares, Math.Rounding.Floor);
-    }
+   function previewRedeem(uint256 shares) public view override returns (uint256) {
+    uint256 totalShares = totalSupply();
+    if (totalShares == 0) return 0;
+
+    // User gets proportional interest plus their original deposit portion
+    uint256 userInterest = (shares * totalInterest) / totalShares;
+
+    // We assume `_convertToAssets(shares)` used to reflect user's portion of all vault funds
+    // Now we assume the base asset is their deposit *only* (not all vault funds)
+    // So we treat shares as 1:1 with deposits for simplicity
+    // Meaning user deposit value = shares, since you're tracking deposits separately
+    return shares + userInterest;
+}
+
 
     /** @dev See {IERC4626-deposit}. */
     function deposit(
@@ -243,6 +264,8 @@ contract VAULT_A is ERC20, IERC4626 {
         }
 
         uint256 shares = previewDeposit(assets);
+        userDeposits[msg.sender] += assets;
+
         _deposit(_msgSender(), receiver, assets, shares);
 
         return shares;
@@ -282,21 +305,37 @@ contract VAULT_A is ERC20, IERC4626 {
     }
 
     /** @dev See {IERC4626-redeem}. */
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) public virtual returns (uint256) {
-        uint256 maxShares = maxRedeem(owner);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-        }
+   function redeem(
+    uint256 shares,
+    address receiver,
+    address owner
+    ) public returns (uint256) {
+    require(shares > 0, "Zero shares");
+    require(shares <= balanceOf(owner), "Exceeds share balance");
 
-        uint256 assets = previewRedeem(shares);
-        _withdraw(_msgSender(), receiver, owner, assets, shares);
+    // Calculate user’s base deposit per share
+    uint256 userDeposit = userDeposits[owner];
+    uint256 userShares = balanceOf(owner);
+    uint256 baseAssets = (userDeposit * shares) / userShares;
 
-        return assets;
-    }
+    // Calculate proportional interest share
+    uint256 interestShare = (shares * totalInterest) / totalSupply();
+
+    uint256 totalAssetsToReturn = baseAssets + interestShare;
+
+    // Burn the user's shares
+    _burn(owner, shares);
+
+    // Update user's deposit mapping
+    userDeposits[owner] -= baseAssets;
+
+    // Transfer base assets + interest to the receiver
+    require(_asset.transfer(receiver, totalAssetsToReturn), "Transfer failed");
+
+    emit Withdraw(msg.sender, receiver, owner, totalAssetsToReturn, shares);
+
+    return totalAssetsToReturn;
+}
 
     /**
      * @dev Internal conversion function (from assets to shares) with support for rounding direction.
@@ -379,6 +418,21 @@ contract VAULT_A is ERC20, IERC4626 {
     function _decimalsOffset() internal view virtual returns (uint8) {
         return 0;
     }
+function setFunds(uint256 amount) public onlyAdmin returns (bool) {
+    require(msg.sender == admin, "Only admin can set funds");
+
+    // ✅ Pull the funds from msg.sender
+    _asset.transferFrom(msg.sender, address(this), amount);
+
+    // ✅ (Optional) check: confirm amount received
+    require(_asset.balanceOf(address(this)) >= amount, "Transfer failed");
+
+    // ✅ Mint vault shares to the admin
+    _mint(msg.sender, amount);
+
+    return true;
+}
+
     function _calculateRepaymentAmount(
         address borrower
     ) public view returns (uint256) {
@@ -438,8 +492,13 @@ contract VAULT_A is ERC20, IERC4626 {
         bool success = _asset.transferFrom(msg.sender, address(this), amount);
         require(success, "Token transfer failed");
 
-        //update mapping for loan repayed plus emit an event
+        uint256 principal = loanIssued[borrower];
+        uint256 interest = repaymentAmount - principal;
 
+        totalInterest += interest;
+
+        //update mapping for loan repayed plus emit an event
+        totalInterest += interest;
         repaymentAmounts[borrower] = 0;
         loanIssued[borrower] = 0;
 
