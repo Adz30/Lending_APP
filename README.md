@@ -1,13 +1,35 @@
-# Sample Hardhat Project
+ 💸 Lending Application
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+A decentralized finance (DeFi) lending app built with **Solidity**, **React.js**, and **JavaScript**. Users can deposit into ERC-4626 vaults, borrow against collateral, and repay loans — with smart contract-enforced liquidation (backend only, frontend coming soon).
 
-Try running some of the following tasks:
+---
 
-```shell
-npx hardhat help
+## ⚙️ Features
+
+- 🏦 Two ERC-4626 Vaults (Vault A: Lending, Vault B: Collateral)
+- 🎮 Vault Controller smart contract (manages locks & liquidations)
+- 🪙 Two ERC-20 test tokens
+- 🧨 Time-based loan liquidation (implemented in contracts)
+- 🖥 Frontend built in React with Redux for state management
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
 npx hardhat test
-REPORT_GAS=true npx hardhat test
+
+# Start Hardhat local network
 npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.js
-```
+
+# Deploy contracts
+npx hardhat run scripts/deploy.js --network localhost
+
+# Add deployed contract addresses to config.json
+
+# Launch frontend
+npm run start
