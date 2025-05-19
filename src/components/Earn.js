@@ -16,6 +16,7 @@ import {
   WithdrawFromVaultA,
   loadVaultShares,
 } from "../store/interactions";
+import { transform } from "lodash";
 
 const Earn = () => {
   const [depositAmount, setDepositAmount] = useState(0);
@@ -73,15 +74,16 @@ const Earn = () => {
         "ether"
       );
       await depositIntoVaultA(provider, VAULT_A, token, parsedAmount, dispatch);
-
-      await loadVaultBalances(VAULT_A, provider, dispatch);
-      await loadVaultShares(VAULT_A, account, dispatch);
+      
+      await loadVaultBalances(VAULT_A, VAULT_B, provider, dispatch);
+      await loadVaultShares(VAULT_A, VAULT_B,  account, dispatch);
 
       setAlertMessage("Deposit Successful");
       setAlertVariant("success");
       setShowAlert(true);
       setDepositAmount(0);
     } catch (error) {
+
       setAlertMessage("Deposit Failed");
       setAlertVariant("danger");
       setShowAlert(true);
