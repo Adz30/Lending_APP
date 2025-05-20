@@ -423,7 +423,7 @@ export const WithdrawFromVaultA = async (
     const userAddress = await signer.getAddress();
 
     // Withdraw from Vault A
-    const transaction = await VAULT_A.connect(signer).withdraw(
+    const transaction = await VAULT_A.connect(signer).redeem(
       amount,
       userAddress,
       userAddress

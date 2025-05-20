@@ -1,19 +1,36 @@
 {
   "31337": {
     "TOKEN_A": {
-      "address": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed"
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
     },
     "TOKEN_B": {
-      "address": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
     },
     "VAULT_A": {
-      "address": "0x59b670e9fA9D0A427751Af201D676719a970857b"
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
     },
     "VAULT_B": {
-      "address": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1"
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
     },
     "VAULT_CONTROLLER": {
-      "address": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d"
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+    }
+  },
+  "11155111": {
+    "TOKEN_A": {
+      "address": "0xA84Cc79B5F940F8820f7ecF9C0aC3c36E9B46255"
+    },
+    "TOKEN_B": {
+      "address": "0xED3400524913e3D90aaF908f6C8Ef4fd0525Ce90"
+    },
+    "VAULT_A": {
+      "address": "0x92Ec544b2e5824F14b688103851b5e21529b827D"
+    },
+    "VAULT_B": {
+      "address": "0xcFb111cE2268826c2eC226899267A86c8b07Db66"
+    },
+    "VAULT_CONTROLLER": {
+      "address": "0x8AfB9A5da28380fF0028a140e31b3bB42537A357"
     }
   }
 }
