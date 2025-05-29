@@ -21,19 +21,22 @@
   },
   "11155111": {
     "TOKEN_A": {
-      "address": "0xA84Cc79B5F940F8820f7ecF9C0aC3c36E9B46255"
+      "address": "0xb9A3922b9dc01A2eEd76394b30C8e759B9ED923d"
     },
     "TOKEN_B": {
-      "address": "0xED3400524913e3D90aaF908f6C8Ef4fd0525Ce90"
+      "address": "0x2Da074fa4fe135A1A0737BDd88a0ddCEaB3a42b3"
     },
     "VAULT_A": {
-      "address": "0x92Ec544b2e5824F14b688103851b5e21529b827D"
+      "address": "0x9e342b85A3c544A17e528E88A90D0e0feB360ab0"
     },
     "VAULT_B": {
-      "address": "0xcFb111cE2268826c2eC226899267A86c8b07Db66"
+      "address": "0xeae1737C43cE80651E6de22D066B9a99EDadeC76"
     },
     "VAULT_CONTROLLER": {
-      "address": "0x8AfB9A5da28380fF0028a140e31b3bB42537A357"
+      "address": "0xA54A06c8887f97Cf6026cd7C53C06737B23e17f4"
+    },
+    "Faucet": {
+      "address": "0xF415ee545356490d27470c6AF2881fC48F94F508"
     }
   }
 }
