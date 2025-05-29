@@ -94,26 +94,27 @@ However, **the frontend currently does not provide a UI for manual or automatic 
 
 - Node.js (v16 or above recommended)  
 - npm or yarn  
-- Hardhat  
+- Hardhat
+- metamask account https://metamask.io/
 
 ### Steps
 
 1. **Install dependencies**  
 npm install
 
-Run smart contract tests
+2. **Run smart contract tests**
 npx hardhat test
 
-Start local blockchain
+3 **Start local blockchain**
 npx hardhat node
 
-Deploy contracts
+4 **Deploy contracts**
 npx hardhat run scripts/deploy.js --network localhost
 
-Update config.json
+5 **Update config.json**
 Add deployed contract addresses to the config file for the frontend to connect properly.
 
-Start frontend
+6 **Start frontend**
 npm run start
 
 🛠️ Project Structure
