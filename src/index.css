@@ -11,3 +11,10 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Remove bullets and left padding/margin from all unordered lists */
+ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-left: 0;
+}

@@ -33,6 +33,16 @@ import {
   setVaultControllerContract,
   setLockedStatus,
 } from "./reducers/Vault_Controller";
+import {
+  setLoading,
+  setError,
+  setContract,
+  setTokenAmountA,
+  setTokenAmountB,
+  setCooldown,
+  setLastRequestTimes,
+} from "./reducers/Faucet";
+import Faucet_ABI from "../abis/Faucet.json";
 import TOKEN_ABI from "../abis/Token.json";
 import VAULT_A_ABI from "../abis/VAULT_A.json";
 import VAULT_B_ABI from "../abis/VAULT_B.json";
@@ -97,7 +107,6 @@ export const loadTokens = async (provider, chainId, dispatch) => {
 
 export const loadVaultController = async (provider, chainId, dispatch) => {
   try {
-   
     const VaultController = new ethers.Contract(
       config[chainId].VAULT_CONTROLLER.address,
       VAULT_CONTROLLER_ABI,
@@ -108,7 +117,7 @@ export const loadVaultController = async (provider, chainId, dispatch) => {
     dispatch(setVaultControllerContract(VaultController));
 
     // Return the vault contracts
-    return {VaultController};
+    return { VaultController };
   } catch (error) {
     console.error("Failed to load vault contracts:", error);
   }
@@ -189,7 +198,7 @@ export const loadVaultShares = async (VAULT_A, VAULT_B, account, dispatch) => {
 
     return {
       vaultAShares: formattedSharesA,
-      vaultBShares: formattedSharesB
+      vaultBShares: formattedSharesB,
     };
   } catch (error) {
     console.error("Failed to load vault shares:", error);
@@ -239,14 +248,18 @@ export const loadVaultBalances = async (
 
     const vaultABalance = await tokenA.balanceOf(VAULT_A.address);
     const vaultBBalance = await tokenB.balanceOf(VAULT_B.address);
-    
-    console.log("Vault A Balance (Token A in Vault):", vaultABalance.toString());
-    console.log("Vault B Balance (Token B in Vault):", vaultBBalance.toString());
 
+    console.log(
+      "Vault A Balance (Token A in Vault):",
+      vaultABalance.toString()
+    );
+    console.log(
+      "Vault B Balance (Token B in Vault):",
+      vaultBBalance.toString()
+    );
 
     const formattedA = ethers.utils.formatUnits(vaultABalance, "ether");
     const formattedB = ethers.utils.formatUnits(vaultBBalance, "ether");
-
 
     const symbolA = await VAULT_A.symbol();
     const symbolB = await VAULT_B.symbol();
@@ -256,21 +269,18 @@ export const loadVaultBalances = async (
     dispatch(vaultBBalanceLoaded(formattedB));
     dispatch(setVaultASymbol(symbolA));
     dispatch(setVaultBSymbol(symbolB));
- 
 
     return {
       vaultABalance: formattedA,
       vaultBBalance: formattedB,
-    
-      symbolA,
-      symbolB
-    };
 
+      symbolA,
+      symbolB,
+    };
   } catch (err) {
     console.error("Failed to load vault asset balances:", err);
   }
 };
-
 
 export const checkLockedStatus = async (VaultController, account, dispatch) => {
   if (!VaultController || !VaultController.contract) {
@@ -290,7 +300,6 @@ export const checkLockedStatus = async (VaultController, account, dispatch) => {
     return false;
   }
 };
-
 
 export const depositIntoVaultA = async (
   provider,
@@ -440,7 +449,7 @@ export const WithdrawFromVaultA = async (
     // Dispatch fail action
     dispatch(vaultAWithdrawFail());
   }
-}
+};
 export const loadRepaymentAmount = async (VAULT_A, account, dispatch) => {
   try {
     const rawAmount = await VAULT_A.repaymentAmounts(account);
@@ -449,5 +458,88 @@ export const loadRepaymentAmount = async (VAULT_A, account, dispatch) => {
   } catch (error) {
     console.error("Error loading repayment amount:", error);
     dispatch(setRepaymentAmount(null));
+  }
+};
+export const loadFaucet = async (provider, chainId, dispatch) => {
+  try {
+    dispatch(setLoading(true));
+
+    const signer = provider.getSigner();
+    const faucetContract = new ethers.Contract(
+      config[chainId].Faucet.address,
+      Faucet_ABI,
+      signer
+    );
+
+    // Fetch both token amounts
+    const tokenAmountA = await faucetContract.tokenAmountA();
+    const tokenAmountB = await faucetContract.tokenAmountB();
+    const cooldown = await faucetContract.cooldown();
+
+    dispatch(setContract(faucetContract));
+    dispatch(setTokenAmountA(tokenAmountA.toString()));
+    dispatch(setTokenAmountB(tokenAmountB.toString()));
+    dispatch(setCooldown(Number(cooldown)));
+    return faucetContract;  
+  } catch (error) {
+    console.error("Failed to load faucet contract:", error);
+    dispatch(setError(error.message));
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
+
+// --- Load Faucet config values: tokenAmount, cooldown ---
+export const loadFaucetConfig = async (contract, dispatch) => {
+  try {
+    dispatch(setLoading(true));
+
+    const [tokenAmountA, tokenAmountB, cooldown] = await Promise.all([
+      contract.tokenAmountA(),
+      contract.tokenAmountB(),
+      contract.cooldown(),
+    ]);
+
+    dispatch(setTokenAmountA(tokenAmountA.toString()));
+    dispatch(setTokenAmountB(tokenAmountB.toString()));
+    dispatch(setCooldown(Number(cooldown)));
+  } catch (error) {
+    dispatch(setError(error.message));
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
+
+
+// --- Load user's last request time from Faucet contract ---
+export const loadUserLastRequestTime = async (
+  contract,
+  userAddress,
+  dispatch
+) => {
+  try {
+    const lastRequest = await contract.lastRequestTime(userAddress);
+    dispatch(setLastRequestTimes({ [userAddress]: lastRequest.toNumber() }));
+  } catch (error) {
+    dispatch(setError(error.message));
+  }
+};
+
+// --- Call faucet contract's requestTokens method (send tx) ---
+export const requestTokens = async (contract, account, dispatch) => {
+  dispatch(setLoading(true));
+  dispatch(setError(null));
+  try {
+    const signer = contract.provider.getSigner(account);
+    const contractWithSigner = contract.connect(signer);
+
+    const tx = await contractWithSigner.requestTokens();
+    await tx.wait();
+
+    // Optional: reload cooldown/request time
+    dispatch(setLoading(false));
+  } catch (error) {
+    dispatch(setError(error.message));
+    dispatch(setLoading(false));
   }
 };

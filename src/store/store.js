@@ -3,6 +3,7 @@ import tokens from "./reducers/tokens";
 import VaultA from "./reducers/VaultA";  // Your Vault A reducer
 import VaultB from "./reducers/VaultB";  // Your Vault B reducer
 import  VaultController  from "./reducers/Vault_Controller";
+import faucet from "./reducers/Faucet";
 import { configureStore } from "@reduxjs/toolkit";
 
 export const store = configureStore({
@@ -11,7 +12,8 @@ export const store = configureStore({
     tokens,
     vaultA: VaultA,
     vaultB: VaultB,
-    VaultController
+    VaultController,
+    faucet
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

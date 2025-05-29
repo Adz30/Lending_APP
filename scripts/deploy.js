@@ -47,6 +47,17 @@ async function main() {
   await tokenA.connect(deployer).approve(vaultA.address, transferAmount, { gasLimit });
   await vaultA.connect(deployer).setFunds(transferAmount, { gasLimit });
   console.log(`Set ${ethers.utils.formatUnits(transferAmount, "ether")} tokens in Vault A using setFunds`);
+
+  const Faucet = await ethers.getContractFactory("Faucet");
+  const faucet = await Faucet.deploy(tokenA.address, tokenB.address);
+  await faucet.deployed();
+  console.log("Faucet deployed to:", faucet.address);
+
+  // Transfer 10,000 tokens to Faucet contract from deployer
+  const faucetFundingAmount = tokens(10000);
+  await tokenA.transfer(faucet.address, faucetFundingAmount);
+  await tokenB.transfer(faucet.address, faucetFundingAmount);
+  console.log(`Transferred ${ethers.utils.formatUnits(faucetFundingAmount, "ether")} TokenA and TokenB to Faucet`);
 }
 
 main()
