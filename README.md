@@ -4,6 +4,14 @@ A decentralized finance (DeFi) lending app built with **Solidity**, **React.js**
 Users can deposit tokens into **ERC-4626 vaults**, borrow against collateral, and repay loans — with smart contract-enforced **time-based liquidations** (backend fully implemented, frontend coming soon).
 
 ---
+## 🎥 Demo Video
+
+Watch a quick demo of the lending app in action:  
+
+[![Lending App Demo](https://img.youtube.com/vi/5J0tUxdQkwU/maxresdefault.jpg)](https://youtu.be/5J0tUxdQkwU)  
+
+*Click the image to watch the video.*
+---
 
 ## 🌐 Live Demo & Faucet
 
@@ -27,16 +35,6 @@ The website includes a **token faucet** allowing you to mint test tokens and int
 
 4. **Repay Loan Before Expiry**  
    Repay your loan any time before expiry to unlock collateral and avoid liquidation.
-
----
-
-## 🎥 Demo Video
-
-Watch a quick demo of the lending app in action:  
-
-[![Lending App Demo](https://img.youtube.com/vi/5J0tUxdQkwU/maxresdefault.jpg)](https://youtu.be/5J0tUxdQkwU)  
-
-*Click the image to watch the video.*
 
 ---
 
